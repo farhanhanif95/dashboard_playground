@@ -1,3 +1,12 @@
+# pre reqs for running the code:
+1. Make sure following libraries are installed in your environment:
+      numpy
+      pandas
+      plotly express
+      streamlit
+2. Use following command in your Python terminal to execute the code:
+      streamlit run employee_attrition_streamlit_dash.py
+
 # dashboard_playground
 This repo for playing around with different Python dasboards
 
