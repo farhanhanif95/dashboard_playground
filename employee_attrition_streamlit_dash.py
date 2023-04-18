@@ -3,6 +3,8 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 import time
+import plotly.express as px
+
 
 def load_data():
     df = pd.read_csv('employee_attrition_train.csv')
@@ -34,6 +36,28 @@ def create_charts(df):
     fig2 = px.histogram(data_frame=df, x="age_new")
     return fig1, fig2
 
+import plotly.express as px
+
+def create_map(df):
+    city_data = df.groupby('City', as_index=False).mean()
+    city_coords = pd.read_csv('uk_cities.csv')
+    city_data = pd.merge(city_data, city_coords, on='City')
+    city_data['Attrition'] = city_data['Attrition'].round(2)
+    city_data['MonthlyIncome'] = city_data['MonthlyIncome'].round(2)
+    city_data['JobSatisfaction'] = city_data['JobSatisfaction'].round(2)
+    fig = px.scatter_mapbox(city_data, lat='Latitude', lon='Longitude', color='Attrition',
+                            size='MonthlyIncome', hover_name='City',
+                            hover_data=['Attrition', 'MonthlyIncome','JobSatisfaction'],
+                            zoom=5, height=375, width=500)
+    fig.update_layout(
+        mapbox_style='open-street-map',
+        margin={'l': 0, 'r': 0, 't': 10, 'b': 0}
+    )
+    return fig
+
+
+
+# Modify the display_dashboard function to include the map widget
 def display_dashboard(df):
     st.set_page_config(
         page_title="Employee Attrition Dashboard",
@@ -48,50 +72,56 @@ def display_dashboard(df):
 
     # Creating a single element container
     placeholder = st.empty()
-    for seconds in range(2000):
-        df["age_new"] = df["Age"] * np.random.choice(range(1, 5))
-        df["DailyRate_new"] = df["DailyRate"] * np.random.choice(range(1, 5))   
+    df["age_new"] = df["Age"] * np.random.choice(range(1, 5))
+    df["DailyRate_new"] = df["DailyRate"] * np.random.choice(range(1, 5))   
 
-        avg_age, attrition_yes, avg_daily_rate = create_kpi_metrics(df)
+    avg_age, attrition_yes, avg_daily_rate = create_kpi_metrics(df)
 
-        with placeholder.container():
+    with placeholder.container():
 
-            # create three columns
-            kpi1, kpi2, kpi3 = st.columns(3)
 
-            # fill in those three columns with respective metrics or KPIs
-            kpi1.metric(
-                label="Age",
-                value=round(avg_age),
-                delta=round(avg_age) - 10,
-            )
+        # create three columns
+        kpi1, kpi2, kpi3 = st.columns(3)
 
-            kpi2.metric(
-                label="Attrition = Yes Count",
-                value=attrition_yes,
-                delta=-10 + attrition_yes,
-            )
+        # fill in those three columns with respective metrics or KPIs
+        kpi1.metric(
+            label="Age",
+            value=round(avg_age),
+            delta=round(avg_age) - 10,
+        )
 
-            kpi3.metric(
-                label="Daily Rate",
-                value=f"$ {round(avg_daily_rate,2)} ",
-                delta=-round(avg_daily_rate / attrition_yes) * 100,
-            )
+        kpi2.metric(
+            label="Attrition = Yes Count",
+            value=attrition_yes,
+            delta=-10 + attrition_yes,
+        )
 
-            # create two columns for charts
-            fig_col1, fig_col2 = st.columns(2)
-            with fig_col1:
-                st.markdown("### First Chart")
-                fig1, fig2 = create_charts(df)
-                st.write(fig1)
+        kpi3.metric(
+            label="Daily Rate",
+            value=f"$ {round(avg_daily_rate,2)} ",
+            delta=-round(avg_daily_rate / attrition_yes) * 100,
+        )
 
-            with fig_col2:
-                st.markdown("### Second Chart")
-                st.write(fig2)
+        # create two columns for charts and map
+        fig_col1, fig_col2, fig_col3 = st.columns(3)
+        with fig_col1:
+            st.markdown("### First Chart")
+            fig1, fig2 = create_charts(df)
+            st.write(fig1)
 
-            st.markdown("### Detailed Data View")
-            st.dataframe(df)
-            time.sleep(1)
+        with fig_col2:
+            st.markdown("### Second Chart")
+            st.write(fig2)
+
+        with fig_col3:
+            st.markdown("### Attrition by City Map")
+            fig3 = create_map(df)
+            st.plotly_chart(fig3)
+
+        st.markdown("### Detailed Data View")
+        st.dataframe(df)
+
+
 
 def main():
     df = load_data()
